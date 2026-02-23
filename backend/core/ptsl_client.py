@@ -48,23 +48,46 @@ class PTSLClient:
         self._tracks = []
         self._export_cancelled = False  # 导出取消标志
     
-    def _map_bit_depth(self, bit_depth_value: int) -> str:
+    def _normalize_bit_depth(self, bit_depth_value: Any) -> int:
         """
-        映射PTSL BitDepth枚举值到字符串描述
+        标准化 bit depth 为整数（16/24/32）。
         
-        Args:
-            bit_depth_value: PTSL返回的bit depth数值
-            
-        Returns:
-            str: 对应的字符串描述
+        PTSL 在不同版本/调用场景下可能返回枚举值、整数或字符串（如 "32 Float"）。
+        这里统一转为 int，避免 API 模型校验失败及后续导出参数判断错误。
         """
-        bit_depth_mapping = {
-            0: "None",      # Bit_None
-            1: "16",        # Bit16
-            2: "24",        # Bit24
-            3: "32 Float"   # Bit32Float
-        }
-        return bit_depth_mapping.get(bit_depth_value, "Unknown")
+        if bit_depth_value is None:
+            return 24
+
+        # 处理 protobuf/enum 包装值
+        if hasattr(bit_depth_value, "value"):
+            enum_value = getattr(bit_depth_value, "value")
+            if isinstance(enum_value, int):
+                bit_depth_value = enum_value
+
+        if isinstance(bit_depth_value, (int, float)):
+            numeric_value = int(bit_depth_value)
+            numeric_mapping = {
+                1: 16,   # Bit16
+                2: 24,   # Bit24
+                3: 32,   # Bit32Float
+                16: 16,
+                24: 24,
+                32: 32,
+            }
+            return numeric_mapping.get(numeric_value, 24)
+
+        text = str(bit_depth_value).strip().lower()
+        compact = text.replace(" ", "").replace("_", "").replace("-", "")
+
+        if compact in {"1", "16", "16bit", "bit16"}:
+            return 16
+        if compact in {"2", "24", "24bit", "bit24"}:
+            return 24
+        if compact in {"3", "32", "32bit", "32float", "32bitfloat", "float32", "bit32float", "bit32"}:
+            return 32
+
+        logger.warning(f"未知位深度值 '{bit_depth_value}'，将回退到 24-bit")
+        return 24
         
     @property
     def is_connected(self) -> bool:
@@ -132,7 +155,7 @@ class PTSLClient:
                 "session_name": "Demo Session",
                 "session_path": "/Users/demo/Documents/Demo Session.ptx",
                 "sample_rate": 48000,
-                "bit_depth": "24",
+                "bit_depth": 24,
                 "is_playing": False,
                 "is_recording": False
             }
@@ -151,8 +174,8 @@ class PTSLClient:
             session_sample_rate = await asyncio.to_thread(lambda: self.engine.session_sample_rate())
             session_bit_depth_raw = await asyncio.to_thread(lambda: self.engine.session_bit_depth())
             
-            # 映射bit depth数值到字符串描述
-            session_bit_depth = self._map_bit_depth(session_bit_depth_raw)
+            # 统一为整数位深度，避免 32-bit float 场景下类型不兼容
+            session_bit_depth = self._normalize_bit_depth(session_bit_depth_raw)
             
             return {
                 "session_name": session_name,
@@ -612,7 +635,9 @@ class PTSLClient:
             # 获取会话信息以确定默认采样率和位深度
             session_info = await self.get_session_info()
             actual_sample_rate = sample_rate or session_info.get("sample_rate", 48000)
-            actual_bit_depth = bit_depth or session_info.get("bit_depth", 24)
+            actual_bit_depth = self._normalize_bit_depth(
+                bit_depth if bit_depth is not None else session_info.get("bit_depth", 24)
+            )
             
             logger.info(f"开始直接导出音频: {output_path}")
             logger.info(f"格式: {file_format}, 采样率: {actual_sample_rate}, 位深度: {actual_bit_depth}")
@@ -759,6 +784,9 @@ class PTSLClient:
         else:
             audio_info.sample_rate = PTSL_pb2.SampleRate.SR_48000
         
+        # 标准化位深度后再映射
+        bit_depth = self._normalize_bit_depth(bit_depth)
+
         # 设置位深度
         if bit_depth == 16:
             audio_info.bit_depth = PTSL_pb2.BitDepth.Bit16
@@ -867,7 +895,7 @@ class PTSLClient:
             # 获取工程信息以获取采样率和位深度
             session_info = await self.get_session_info()
             sample_rate = session_info.get('sample_rate', 48000)
-            bit_depth = session_info.get('bit_depth', 24)
+            bit_depth = self._normalize_bit_depth(session_info.get('bit_depth', 24))
             
             logger.info(f"开始导出混音: 源={source_name}, 类型={source_type}, 路径={output_path}")
             

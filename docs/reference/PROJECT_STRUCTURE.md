@@ -69,7 +69,7 @@ Track2Do/
 ### Frontend (React + Electron)
 - **UI Layer**: Modern React components.
 - **State Management**: Context API + Hooks.
-- **Auth**: Authing integration.
+- **Access Model**: Direct access with no login required.
 - **Realtime Connectivity**: WebSocket communication.
 - **Desktop Integration**: Electron main process and IPC.
 

@@ -1,17 +1,12 @@
 # Track2Do Software User Guide
 
-## First Login
+## Getting Started
 
-After opening Track2Do software, you'll enter the login page:
-
-- Enter your email address
-- Enter your password
-- Click the blue "Sign In" button to log in
-- Or choose "Sign in with Google" to log in with your Google account
+After opening Track2Do, you can use the app directly without logging in.
 
 ## Step 1: Check Project Information
 
-After logging in successfully, on the main page, first check the connection status and basic information of your current Pro Tools project:
+On the main page, first check the connection status and basic information of your current Pro Tools project:
 
 ### Project Basic Information
 

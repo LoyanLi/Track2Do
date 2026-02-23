@@ -35,14 +35,6 @@ interface ElectronAPI {
     post: (url: string, data?: any) => Promise<any>
     delete: (url: string) => Promise<any>
   }
-  signInWithGoogle: () => Promise<{
-    success: boolean
-    credential?: {
-      idToken: string
-      accessToken: string
-    }
-    error?: string
-  }>
 }
 
 // 安全地暴露 API 给渲染进程
@@ -73,7 +65,6 @@ const electronAPI: ElectronAPI = {
     post: (url: string, data?: any) => ipcRenderer.invoke('http:post', url, data),
     delete: (url: string) => ipcRenderer.invoke('http:delete', url),
   },
-  signInWithGoogle: () => ipcRenderer.invoke('auth:signInWithGoogle'),
 }
 
 // 将 API 暴露到全局对象

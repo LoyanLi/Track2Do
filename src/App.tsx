@@ -4,9 +4,7 @@ import { TrackList } from './components/TrackList'
 import { SnapshotPanel } from './components/SnapshotPanel'
 import ExportPanel from './components/ExportPanel'
 import { StatusBar } from './components/StatusBar'
-import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoadingScreen } from './components/LoadingScreen'
-import { AuthProvider } from './contexts/AuthContext'
 import { useProToolsConnection } from './hooks/useProToolsConnection'
 import { useSnapshots } from './hooks/useSnapshots'
 
@@ -230,7 +228,6 @@ function App() {
         await new Promise(resolve => setTimeout(resolve, 2000))
         
         // 这里可以添加实际的初始化逻辑，比如：
-        // - 检查用户认证状态
         // - 加载配置文件
         // - 初始化服务连接
         // - 预加载必要的数据
@@ -248,13 +245,7 @@ function App() {
   return (
     <>
       <LoadingScreen isLoading={isLoading} />
-      {!isLoading && (
-        <AuthProvider>
-          <ProtectedRoute>
-            <AppContent />
-          </ProtectedRoute>
-        </AuthProvider>
-      )}
+      {!isLoading && <AppContent />}
     </>
   )
 }

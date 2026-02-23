@@ -177,14 +177,6 @@ export interface ElectronAPI {
     post: (url: string, data?: any) => Promise<any>
     delete: (url: string) => Promise<any>
   }
-  signInWithGoogle: () => Promise<{
-    success: boolean
-    credential?: {
-      idToken: string
-      accessToken: string
-    }
-    error?: string
-  }>
 }
 
 // Extend Window interface
