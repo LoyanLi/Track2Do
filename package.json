@@ -1,0 +1,106 @@
+{
+  "name": "Track2Do",
+  "version": "0.1.0",
+  "description": "A macOS desktop app that automates Pro Tools stem export workflows with snapshot-based batch processing.",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
+    "dev:main": "tsc -p tsconfig.main.json && electron dist/main.js",
+    "dev:renderer": "vite",
+    "clean": "rm -rf dist release",
+    "build": "npm run build:main && npm run build:renderer",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:renderer": "vite build",
+    "build:mac": "bash ./scripts/build/build_mac.sh",
+    "icon:convert": "bash ./scripts/build/convert_icon.sh",
+    "version:bump": "bash ./scripts/build/update_version.sh",
+    "package": "electron-builder",
+    "package:mac": "electron-builder --mac"
+  },
+  "keywords": [
+    "pro-tools",
+    "stem",
+    "export",
+    "audio",
+    "electron"
+  ],
+  "author": "Luminous Layers",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "autoprefixer": "^10.4.0",
+    "concurrently": "^8.0.0",
+    "electron": "^25.0.0",
+    "electron-builder": "^24.0.0",
+    "eslint": "^8.0.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5.0.0",
+    "vite": "^4.4.0"
+  },
+  "dependencies": {
+    "axios": "^1.4.0",
+    "clsx": "^2.0.0",
+    "firebase": "^12.1.0",
+    "lucide-react": "^0.263.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwind-merge": "^1.14.0"
+  },
+  "build": {
+    "appId": "com.track2do.app",
+    "productName": "Track2Do",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "node_modules/**/*",
+      "backend/**/*"
+    ],
+    "asarUnpack": [
+      "backend/**/*"
+    ],
+    "mac": {
+      "icon": "assets/icons/icon.icns",
+      "category": "public.app-category.music",
+      "target": {
+        "target": "dmg",
+        "arch": [
+          "x64",
+          "arm64"
+        ]
+      },
+      "identity": null,
+      "gatekeeperAssess": false,
+      "hardenedRuntime": false,
+      "entitlements": null,
+      "entitlementsInherit": null,
+      "type": "distribution",
+      "signIgnore": [
+        "**/*"
+      ],
+      "extendInfo": {
+        "LSUIElement": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
+    },
+    "win": {
+      "icon": "assets/icons/icon.ico",
+      "target": "nsis"
+    },
+    "linux": {
+      "icon": "assets/icons/icon.png",
+      "target": "AppImage"
+    }
+  }
+}
