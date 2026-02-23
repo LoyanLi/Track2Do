@@ -49,3 +49,10 @@ backend/.env.*
 
 # Local caches
 .cache/
+
+# PTSL SDK/proto artifacts (download locally; do not commit)
+docs/protocol/PTSL.proto
+backend/ptsl_pb2.py
+backend/ptsl_pb2_grpc.py
+backend/PTSL_pb2.py
+backend/PTSL_pb2_grpc.py

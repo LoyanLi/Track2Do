@@ -27,11 +27,13 @@ Track2Do is built for audio engineers who need repeatable, fast, and less error-
 - Python 3.10+
 - Pro Tools with PTSL available
 
+For PTSL SDK/runtime setup and official links, see `docs/protocol/README.md`.
+
 ## Quick Start
 
 ```bash
 npm install
-cd backend && python3 -m pip install -r requirements.txt && cd ..
+./scripts/setup/install_ptsl_prereqs.sh
 npm run dev
 ```
 
@@ -79,6 +81,7 @@ Or use the build script:
 - `docs/release/RELEASE_PROCESS.md`
 - `docs/release/GITHUB_RELEASE_CHECKLIST.md`
 - `CONTRIBUTING.md`
+- Chinese video tutorial: https://www.bilibili.com/video/BV1bAYqzQEhj/?spm_id_from=333.1387.homepage.video_card.click
 
 ## Release Artifacts
 

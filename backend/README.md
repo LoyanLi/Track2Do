@@ -37,6 +37,8 @@ A FastAPI + py-ptsl backend service for Pro Tools stem separation and audio proc
 
 ## Installation and Configuration
 
+PTSL SDK/runtime onboarding links and legal notes: `../docs/protocol/README.md`
+
 ### 1. Install Dependencies
 
 ```bash
