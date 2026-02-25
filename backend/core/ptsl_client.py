@@ -738,25 +738,29 @@ class PTSLClient:
     def _create_source_info(self, source_name: str, source_type: str) -> 'PTSL_pb2.EM_SourceInfo':
         """
         创建混音源信息对象
-        
+
         Args:
             source_name: 混音源名称
             source_type: 混音源类型字符串
-            
+
         Returns:
             EM_SourceInfo: 混音源信息对象
         """
         source_info = PTSL_pb2.EM_SourceInfo()
         source_info.name = source_name
-        
+
         # 根据 py-ptsl 文档，EM_SourceType 只有三个值：PhysicalOut=0, Bus=1, Output=2
         if source_type.lower() == "physicalout":
             source_info.source_type = PTSL_pb2.EM_SourceType.PhysicalOut
+            logger.debug(f"源类型映射: {source_type} -> PhysicalOut (0)")
         elif source_type.lower() == "bus":
             source_info.source_type = PTSL_pb2.EM_SourceType.Bus
+            logger.debug(f"源类型映射: {source_type} -> Bus (1)")
         else:  # Output
             source_info.source_type = PTSL_pb2.EM_SourceType.Output
-        
+            logger.debug(f"源类型映射: {source_type} -> Output (2)")
+
+        logger.debug(f"创建的源信息 - 名称: {source_info.name}, 类型值: {source_info.source_type}")
         return source_info
     
     def _create_audio_info(self, sample_rate: int, bit_depth: int) -> 'PTSL_pb2.EM_AudioInfo':
@@ -930,6 +934,7 @@ class PTSLClient:
             # 创建混音源列表
             sources = [self._create_source_info(source_name, source_type)]
             logger.debug(f"混音源: {source_name} ({source_type})")
+            logger.debug(f"源列表长度: {len(sources)}")
 
             # 创建音频信息
             audio_info = self._create_audio_info(sample_rate, bit_depth)
