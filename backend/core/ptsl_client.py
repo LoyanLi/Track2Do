@@ -916,7 +916,8 @@ class PTSLClient:
             
             # 创建导出参数 - 只使用文件名（不含扩展名）
             base_name = os.path.splitext(os.path.basename(output_path))[0]
-            
+            logger.debug(f"导出文件名 (base_name): {base_name}")
+
             # 设置文件类型 - 只支持WAV和AIFF格式
             if file_format.upper() == "WAV":
                 file_type = PTSL_pb2.EM_FileType.EM_WAV
@@ -925,26 +926,30 @@ class PTSLClient:
             else:
                 logger.warning(f"不支持的文件格式 {file_format}，将使用 WAV 格式代替")
                 file_type = PTSL_pb2.EM_FileType.EM_WAV  # 默认WAV
-            
+
             # 创建混音源列表
             sources = [self._create_source_info(source_name, source_type)]
-            
+            logger.debug(f"混音源: {source_name} ({source_type})")
+
             # 创建音频信息
             audio_info = self._create_audio_info(sample_rate, bit_depth)
-            
+            logger.debug(f"音频信息: {sample_rate}Hz, {bit_depth}bit")
+
             # 创建视频信息（空）
             video_info = PTSL_pb2.EM_VideoInfo()
             video_info.include_video = PTSL_pb2.TripleBool.TB_False
-            
+
             # 创建位置信息
             location_info = self._create_location_info(output_path)
-            
+            logger.debug(f"导出目录: {location_info.directory}")
+            logger.debug(f"文件目标: {location_info.file_destination}")
+
             # 创建 Dolby Atmos 信息（空）
             dolby_atmos_info = PTSL_pb2.EM_DolbyAtmosInfo()
-            
+
             # 设置离线导出选项
             offline_bounce_option = PTSL_pb2.TripleBool.TB_True if offline_bounce else PTSL_pb2.TripleBool.TB_False
-            
+
             # 最后检查取消标志
             if self._export_cancelled:
                 logger.info("导出在执行前已取消")
@@ -955,8 +960,9 @@ class PTSLClient:
                     "source_name": source_name,
                     "source_type": source_type
                 }
-            
+
             # 执行混音导出
+            logger.info(f"执行 export_mix 调用: base_name={base_name}, location_info.file_destination={location_info.file_destination}")
             await asyncio.to_thread(
                 self.engine.export_mix,
                 base_name=base_name,
@@ -968,7 +974,8 @@ class PTSLClient:
                 dolby_atmos_info=dolby_atmos_info,
                 offline_bounce=offline_bounce_option
             )
-            
+            logger.info(f"export_mix 调用完成")
+
             # 检查是否在导出过程中被取消
             if self._export_cancelled:
                 logger.info("导出在执行过程中已取消")
@@ -987,13 +994,34 @@ class PTSLClient:
                     "source_name": source_name,
                     "source_type": source_type
                 }
-            
-            # 检查文件是否成功创建
+
+            # 由于 EM_FD_SessionFolder 会导出到会话文件夹而非指定目录，
+            # 需要查找会话文件夹中的文件并移动到目标位置
             output_file = Path(output_path)
+            session_info = await self.get_session_info()
+            session_path = Path(session_info.get("session_path", ""))
+            session_folder = session_path.parent
+
+            # 会话文件夹中文件的预期位置
+            expected_file_in_session = session_folder / f"{base_name}.wav"
+            logger.debug(f"查找导出文件在会话文件夹: {expected_file_in_session}")
+
+            # 如果在会话文件夹中找到，移动到目标位置
+            if expected_file_in_session.exists():
+                logger.info(f"发现导出文件在会话文件夹: {expected_file_in_session}")
+                try:
+                    # 移动文件到目标位置
+                    expected_file_in_session.rename(output_file)
+                    logger.info(f"文件移动成功: {expected_file_in_session} -> {output_file}")
+                except Exception as move_error:
+                    logger.error(f"文件移动失败: {move_error}")
+                    raise Exception(f"导出文件移动失败: {move_error}")
+
+            # 检查文件是否成功创建或移动
             if output_file.exists():
                 file_size = output_file.stat().st_size
                 logger.info(f"导出成功: {output_path}, 文件大小: {file_size} 字节")
-                
+
                 return {
                     "success": True,
                     "output_path": str(output_file),
@@ -1005,6 +1033,8 @@ class PTSLClient:
                     "source_type": source_type
                 }
             else:
+                logger.error(f"文件不存在于目标位置: {output_path}")
+                logger.error(f"也不存在于会话文件夹: {expected_file_in_session}")
                 raise Exception(f"导出文件未创建: {output_path}")
                 
         except Exception as e:
