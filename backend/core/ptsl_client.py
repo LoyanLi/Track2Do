@@ -1002,9 +1002,34 @@ class PTSLClient:
             session_path = Path(session_info.get("session_path", ""))
             session_folder = session_path.parent
 
+            logger.info(f"会话路径: {session_path}")
+            logger.info(f"会话文件夹: {session_folder}")
+
             # 会话文件夹中文件的预期位置
             expected_file_in_session = session_folder / f"{base_name}.wav"
             logger.debug(f"查找导出文件在会话文件夹: {expected_file_in_session}")
+
+            # 列出会话文件夹中的所有文件（用于诊断）
+            try:
+                if session_folder.exists():
+                    files_in_session = list(session_folder.glob("*"))
+                    logger.debug(f"会话文件夹中的文件数量: {len(files_in_session)}")
+
+                    # 查找所有 WAV 文件
+                    wav_files = list(session_folder.glob("*.wav"))
+                    if wav_files:
+                        logger.info(f"会话文件夹中的 WAV 文件: {[f.name for f in wav_files]}")
+                    else:
+                        logger.warning(f"会话文件夹中没有找到 WAV 文件")
+
+                    # 查找与导出相关的文件（以 temp_export 开头）
+                    temp_files = list(session_folder.glob("temp_export*"))
+                    if temp_files:
+                        logger.info(f"会话文件夹中的临时文件: {[f.name for f in temp_files]}")
+                else:
+                    logger.error(f"会话文件夹不存在: {session_folder}")
+            except Exception as list_error:
+                logger.error(f"列出会话文件夹文件失败: {list_error}")
 
             # 如果在会话文件夹中找到，移动到目标位置
             if expected_file_in_session.exists():
@@ -1035,6 +1060,7 @@ class PTSLClient:
             else:
                 logger.error(f"文件不存在于目标位置: {output_path}")
                 logger.error(f"也不存在于会话文件夹: {expected_file_in_session}")
+                logger.error(f"Pro Tools export_mix 可能导出失败，请检查混音源配置: {source_name}")
                 raise Exception(f"导出文件未创建: {output_path}")
                 
         except Exception as e:
