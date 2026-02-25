@@ -810,31 +810,37 @@ class PTSLClient:
     def _create_location_info(self, export_path: str) -> 'PTSL_pb2.EM_LocationInfo':
         """
         创建位置信息
-        
+
         Args:
             export_path: 导出文件路径
-            
+
         Returns:
             EM_LocationInfo: 位置信息对象
         """
         location_info = PTSL_pb2.EM_LocationInfo()
-        
-        # 设置目录路径 - MacOS 路径必须以冒号结尾
+
+        # 获取导出目录（通常是 Bounced Files）
         directory_path = os.path.dirname(export_path)
-        if not directory_path.endswith(":"):
-            directory_path += ":"
-        location_info.directory = directory_path
-        
-        # 使用 EM_FD_SessionFolder (值为1) - 避免断言失败问题
-        # EM_FD_Directory (值为2) 会导致 Pro Tools 内部断言失败
+
+        # EM_FD_SessionFolder 需要相对于会话文件夹的路径
+        # 提取 "Bounced Files:" 这样的相对路径
+        dir_name = os.path.basename(directory_path)
+        if not dir_name.endswith(":"):
+            dir_name += ":"
+
+        location_info.directory = dir_name
+
+        # 使用 EM_FD_SessionFolder - 配合相对路径
         location_info.file_destination = PTSL_pb2.EM_FileDestination.EM_FD_SessionFolder
-        
+
         # 设置导入选项
         location_info.import_after_bounce = PTSL_pb2.TripleBool.TB_False
-        
+
         # 确保目录存在
-        os.makedirs(os.path.dirname(export_path), exist_ok=True)
-        
+        os.makedirs(directory_path, exist_ok=True)
+
+        logger.debug(f"位置信息 - 相对路径: {location_info.directory}, 完整路径: {directory_path}")
+
         return location_info
 
     async def export_mix_with_source(self,
