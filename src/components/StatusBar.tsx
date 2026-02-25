@@ -37,7 +37,7 @@ export function StatusBar({ isConnected, tracksCount, snapshotsCount }: StatusBa
         </div>
         
         <div className="text-xs text-gray-500">
-          Track2Do v0.1.0
+          Track2Do v0.1.1
         </div>
       </div>
     </div>

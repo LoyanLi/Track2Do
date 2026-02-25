@@ -91,7 +91,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="PT-STEM Backend API",
     description="Pro Tools STEM 分离和音频处理后端服务",
-    version="1.0.0",
+    version="0.1.1",
     lifespan=lifespan
 )
 
@@ -113,7 +113,7 @@ async def root():
     """根路径健康检查"""
     return {
         "message": "PT-STEM Backend Server",
-        "version": "1.0.0",
+        "version": "0.1.1",
         "status": "running",
         "ptsl_connected": app.state.ptsl_client is not None and app.state.ptsl_client.is_connected
     }
