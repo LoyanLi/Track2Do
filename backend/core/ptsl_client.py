@@ -819,27 +819,15 @@ class PTSLClient:
         """
         location_info = PTSL_pb2.EM_LocationInfo()
 
-        # 获取导出目录（通常是 Bounced Files）
-        directory_path = os.path.dirname(export_path)
-
-        # EM_FD_SessionFolder 需要相对于会话文件夹的路径
-        # 提取 "Bounced Files:" 这样的相对路径
-        dir_name = os.path.basename(directory_path)
-        if not dir_name.endswith(":"):
-            dir_name += ":"
-
-        location_info.directory = dir_name
-
-        # 使用 EM_FD_SessionFolder - 配合相对路径
+        # EM_FD_SessionFolder = 1: Pro Tools 自动导出到会话的 Bounced Files/ 子目录
+        # 不需要设置 directory，由 Pro Tools 自动处理
         location_info.file_destination = PTSL_pb2.EM_FileDestination.EM_FD_SessionFolder
 
         # 设置导入选项
         location_info.import_after_bounce = PTSL_pb2.TripleBool.TB_False
 
-        # 确保目录存在
-        os.makedirs(directory_path, exist_ok=True)
-
-        logger.debug(f"位置信息 - 相对路径: {location_info.directory}, 完整路径: {directory_path}")
+        # 确保 Bounced Files 目录存在
+        os.makedirs(os.path.dirname(export_path), exist_ok=True)
 
         return location_info
 
@@ -1006,54 +994,11 @@ class PTSLClient:
                     "source_type": source_type
                 }
 
-            # 由于 EM_FD_SessionFolder 会导出到会话文件夹而非指定目录，
-            # 需要查找会话文件夹中的文件并移动到目标位置
+            # EM_FD_SessionFolder 会把文件导出到 Bounced Files/ 目录
+            # output_path 已经指向 Bounced Files/，直接检查即可
             output_file = Path(output_path)
-            session_info = await self.get_session_info()
-            session_path = Path(session_info.get("session_path", ""))
-            session_folder = session_path.parent
 
-            logger.info(f"会话路径: {session_path}")
-            logger.info(f"会话文件夹: {session_folder}")
-
-            # 会话文件夹中文件的预期位置
-            expected_file_in_session = session_folder / f"{base_name}.wav"
-            logger.debug(f"查找导出文件在会话文件夹: {expected_file_in_session}")
-
-            # 列出会话文件夹中的所有文件（用于诊断）
-            try:
-                if session_folder.exists():
-                    files_in_session = list(session_folder.glob("*"))
-                    logger.debug(f"会话文件夹中的文件数量: {len(files_in_session)}")
-
-                    # 查找所有 WAV 文件
-                    wav_files = list(session_folder.glob("*.wav"))
-                    if wav_files:
-                        logger.info(f"会话文件夹中的 WAV 文件: {[f.name for f in wav_files]}")
-                    else:
-                        logger.warning(f"会话文件夹中没有找到 WAV 文件")
-
-                    # 查找与导出相关的文件（以 temp_export 开头）
-                    temp_files = list(session_folder.glob("temp_export*"))
-                    if temp_files:
-                        logger.info(f"会话文件夹中的临时文件: {[f.name for f in temp_files]}")
-                else:
-                    logger.error(f"会话文件夹不存在: {session_folder}")
-            except Exception as list_error:
-                logger.error(f"列出会话文件夹文件失败: {list_error}")
-
-            # 如果在会话文件夹中找到，移动到目标位置
-            if expected_file_in_session.exists():
-                logger.info(f"发现导出文件在会话文件夹: {expected_file_in_session}")
-                try:
-                    # 移动文件到目标位置
-                    expected_file_in_session.rename(output_file)
-                    logger.info(f"文件移动成功: {expected_file_in_session} -> {output_file}")
-                except Exception as move_error:
-                    logger.error(f"文件移动失败: {move_error}")
-                    raise Exception(f"导出文件移动失败: {move_error}")
-
-            # 检查文件是否成功创建或移动
+            # 检查文件是否成功创建
             if output_file.exists():
                 file_size = output_file.stat().st_size
                 logger.info(f"导出成功: {output_path}, 文件大小: {file_size} 字节")
@@ -1069,9 +1014,11 @@ class PTSLClient:
                     "source_type": source_type
                 }
             else:
-                logger.error(f"文件不存在于目标位置: {output_path}")
-                logger.error(f"也不存在于会话文件夹: {expected_file_in_session}")
-                logger.error(f"Pro Tools export_mix 可能导出失败，请检查混音源配置: {source_name}")
+                # 列出 Bounced Files 目录内容辅助诊断
+                bounced_dir = output_file.parent
+                if bounced_dir.exists():
+                    wav_files = list(bounced_dir.glob("*.wav"))
+                    logger.error(f"Bounced Files 中现有的 WAV 文件: {[f.name for f in wav_files]}")
                 raise Exception(f"导出文件未创建: {output_path}")
                 
         except Exception as e:
